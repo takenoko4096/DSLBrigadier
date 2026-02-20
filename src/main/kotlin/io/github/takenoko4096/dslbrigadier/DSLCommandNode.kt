@@ -1,0 +1,127 @@
+package io.github.takenoko4096.dslbrigadier
+
+import com.mojang.brigadier.arguments.ArgumentType
+import com.mojang.brigadier.arguments.BoolArgumentType
+import com.mojang.brigadier.arguments.DoubleArgumentType
+import com.mojang.brigadier.arguments.FloatArgumentType
+import com.mojang.brigadier.arguments.IntegerArgumentType
+import com.mojang.brigadier.arguments.LongArgumentType
+import com.mojang.brigadier.arguments.StringArgumentType
+import com.mojang.brigadier.builder.ArgumentBuilder
+import com.mojang.brigadier.builder.LiteralArgumentBuilder
+import com.mojang.brigadier.builder.RequiredArgumentBuilder
+
+class DSLCommandNode<S> private constructor(private val node: ArgumentBuilder<S, *>) {
+    private fun literal(name: String): LiteralArgumentBuilder<S> {
+        return LiteralArgumentBuilder.literal(name)
+    }
+
+    private fun <T> argument(name: String, type: ArgumentType<T>): RequiredArgumentBuilder<S, T> {
+        return RequiredArgumentBuilder.argument(name, type)
+    }
+
+    operator fun String.invoke(builder: DSLCommandNode<S>.() -> Unit) {
+        val subCommand = literal(this)
+        val child = DSLCommandNode(subCommand)
+        child.builder()
+        node.then(subCommand)
+    }
+
+    operator fun <T> String.invoke(type: ArgumentType<T>, builder: DSLCommandNode<S>.() -> Unit) {
+        val argument = argument(this, type)
+        val child = DSLCommandNode(argument)
+        child.builder()
+        node.then(argument)
+    }
+
+    fun requires(predicate: S.() -> Boolean) {
+        node.requires(predicate)
+    }
+
+    fun executes(callback: CommandExecution<S>.() -> Unit) {
+        node.executes {
+            val execution = CommandExecution(it)
+            execution.callback()
+            return@executes execution.returns
+        }
+    }
+
+    fun returnConst(i: Int) {
+        executes {
+            returns = i
+        }
+    }
+
+    fun boolean(): BoolArgumentType {
+        return BoolArgumentType.bool()
+    }
+
+    fun integer(): IntegerArgumentType {
+        return IntegerArgumentType.integer()
+    }
+
+    fun integer(min: Int): IntegerArgumentType {
+        return IntegerArgumentType.integer(min)
+    }
+
+    fun integer(range: IntRange): IntegerArgumentType {
+        return IntegerArgumentType.integer(range.min(), range.max())
+    }
+
+    fun long(): LongArgumentType {
+        return LongArgumentType.longArg()
+    }
+
+    fun long(min: Long): LongArgumentType {
+        return LongArgumentType.longArg(min)
+    }
+
+    fun long(range: LongRange): LongArgumentType {
+        return LongArgumentType.longArg(range.min(), range.max())
+    }
+
+    fun float(): FloatArgumentType {
+        return FloatArgumentType.floatArg()
+    }
+
+    fun float(min: Float): FloatArgumentType {
+        return FloatArgumentType.floatArg(min)
+    }
+
+    fun float(min: Float, max: Float): FloatArgumentType {
+        return FloatArgumentType.floatArg(min, max)
+    }
+
+    fun double(): DoubleArgumentType {
+        return DoubleArgumentType.doubleArg()
+    }
+
+    fun double(min: Double): DoubleArgumentType {
+        return DoubleArgumentType.doubleArg(min)
+    }
+
+    fun double(min: Double, max: Double): DoubleArgumentType {
+        return DoubleArgumentType.doubleArg(min, max)
+    }
+
+    fun string(type: StringArgumentType.StringType): StringArgumentType {
+        return when (type) {
+            StringArgumentType.StringType.QUOTABLE_PHRASE -> StringArgumentType.string()
+            StringArgumentType.StringType.SINGLE_WORD -> StringArgumentType.word()
+            StringArgumentType.StringType.GREEDY_PHRASE -> StringArgumentType.greedyString()
+        }
+    }
+
+    fun string(): StringArgumentType {
+        return string(StringArgumentType.StringType.QUOTABLE_PHRASE)
+    }
+
+    companion object {
+        fun <S> newCommand(name: String, builder: DSLCommandNode<S>.() -> Unit): LiteralArgumentBuilder<S> {
+            val root = LiteralArgumentBuilder.literal<S>(name)
+            val node = DSLCommandNode<S>(root)
+            node.builder()
+            return root
+        }
+    }
+}
