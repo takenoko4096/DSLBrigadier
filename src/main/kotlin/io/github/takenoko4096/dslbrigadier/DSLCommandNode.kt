@@ -14,6 +14,8 @@ import com.mojang.brigadier.builder.RequiredArgumentBuilder
 class DSLCommandNode<S> private constructor(private val argumentBuilder: ArgumentBuilder<S, *>) {
     private var executed: Boolean = false
 
+    private val identifiers = mutableSetOf<String>()
+
     private fun literal(name: String): LiteralArgumentBuilder<S> {
         return LiteralArgumentBuilder.literal(name)
     }
@@ -23,17 +25,27 @@ class DSLCommandNode<S> private constructor(private val argumentBuilder: Argumen
     }
 
     operator fun String.invoke(builder: DSLCommandNode<S>.() -> Unit) {
+        if (identifiers.contains(this)) {
+            throw IllegalArgumentException("block '$this' is duplicating; do not use $this more than once in same block")
+        }
+
         val subCommand = literal(this)
         val child = DSLCommandNode(subCommand)
         child.builder()
         argumentBuilder.then(subCommand)
+        identifiers.add(this)
     }
 
     operator fun <T> String.invoke(type: ArgumentType<T>, builder: DSLCommandNode<S>.() -> Unit) {
+        if (identifiers.contains(this)) {
+            throw IllegalArgumentException("block '$this' is duplicating; do not use $this more than once in same block")
+        }
+
         val argument = argument(this, type)
         val child = DSLCommandNode(argument)
         child.builder()
         argumentBuilder.then(argument)
+        identifiers.add(this)
     }
 
     fun requires(predicate: S.() -> Boolean) {
@@ -42,7 +54,7 @@ class DSLCommandNode<S> private constructor(private val argumentBuilder: Argumen
 
     fun executes(callback: CommandExecution<S>.() -> Unit) {
         if (executed) {
-            throw IllegalStateException("block 'executes' is duplicating; do not use executes more than once in same block")
+            throw IllegalArgumentException("block 'executes' is duplicating; do not use executes more than once in same block")
         }
 
         executed = true
@@ -105,16 +117,16 @@ class DSLCommandNode<S> private constructor(private val argumentBuilder: Argumen
         return DoubleArgumentType.doubleArg(min, max)
     }
 
-    fun string(type: StringArgumentType.StringType): StringArgumentType {
-        return when (type) {
-            StringArgumentType.StringType.QUOTABLE_PHRASE -> StringArgumentType.string()
-            StringArgumentType.StringType.SINGLE_WORD -> StringArgumentType.word()
-            StringArgumentType.StringType.GREEDY_PHRASE -> StringArgumentType.greedyString()
-        }
+    fun string(): StringArgumentType {
+        return StringArgumentType.string()
     }
 
-    fun string(): StringArgumentType {
-        return string(StringArgumentType.StringType.QUOTABLE_PHRASE)
+    fun word(): StringArgumentType {
+        return StringArgumentType.word()
+    }
+
+    fun greedyString(): StringArgumentType {
+        return StringArgumentType.greedyString()
     }
 
     companion object {
