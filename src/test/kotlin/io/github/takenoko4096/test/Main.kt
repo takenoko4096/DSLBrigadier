@@ -4,12 +4,26 @@ import io.github.takenoko4096.dslbrigadier.DSLCommandDispatcher
 
 class CommandSourceStack
 
-object Commands : DSLCommandDispatcher<CommandSourceStack>()
+val commands = DSLCommandDispatcher<CommandSourceStack>()
 
 fun main() {
     println("Hello, world!")
 
-    Commands {
+    val dataCommand = commands.build("data") {
+        "modify" {
+            "entity" {
+                "selector"(string()) {
+                    executes {
+                        println("data modify entity ${"selector"[String::class]}")
+                    }
+                }
+            }
+        }
+    }
+
+    commands.registration {
+        + dataCommand
+
         "calc" command {
             requires {
                 true
@@ -29,6 +43,7 @@ fun main() {
                 "x"(integer()) {
                     "y"(integer()) {
                         executes {
+                            this.context
                             returns = "x"[Int::class] - "y"[Int::class]
                         }
                     }
@@ -41,5 +56,5 @@ fun main() {
         }
     }
 
-    println(Commands.execute("calc subtract 7 2", CommandSourceStack()))
+    println(commands.execute("data modify entity self", CommandSourceStack()))
 }

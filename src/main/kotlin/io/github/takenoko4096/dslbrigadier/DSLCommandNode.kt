@@ -11,7 +11,9 @@ import com.mojang.brigadier.builder.ArgumentBuilder
 import com.mojang.brigadier.builder.LiteralArgumentBuilder
 import com.mojang.brigadier.builder.RequiredArgumentBuilder
 
-class DSLCommandNode<S> private constructor(private val node: ArgumentBuilder<S, *>) {
+class DSLCommandNode<S> private constructor(private val argumentBuilder: ArgumentBuilder<S, *>) {
+    private var executed: Boolean = false
+
     private fun literal(name: String): LiteralArgumentBuilder<S> {
         return LiteralArgumentBuilder.literal(name)
     }
@@ -24,31 +26,30 @@ class DSLCommandNode<S> private constructor(private val node: ArgumentBuilder<S,
         val subCommand = literal(this)
         val child = DSLCommandNode(subCommand)
         child.builder()
-        node.then(subCommand)
+        argumentBuilder.then(subCommand)
     }
 
     operator fun <T> String.invoke(type: ArgumentType<T>, builder: DSLCommandNode<S>.() -> Unit) {
         val argument = argument(this, type)
         val child = DSLCommandNode(argument)
         child.builder()
-        node.then(argument)
+        argumentBuilder.then(argument)
     }
 
     fun requires(predicate: S.() -> Boolean) {
-        node.requires(predicate)
+        argumentBuilder.requires(predicate)
     }
 
     fun executes(callback: CommandExecution<S>.() -> Unit) {
-        node.executes {
+        if (executed) {
+            throw IllegalStateException("block 'executes' is duplicating; do not use executes more than once in same block")
+        }
+
+        executed = true
+        argumentBuilder.executes {
             val execution = CommandExecution(it)
             execution.callback()
             return@executes execution.returns
-        }
-    }
-
-    fun returnConst(i: Int) {
-        executes {
-            returns = i
         }
     }
 
@@ -117,11 +118,11 @@ class DSLCommandNode<S> private constructor(private val node: ArgumentBuilder<S,
     }
 
     companion object {
-        fun <S> newCommand(name: String, builder: DSLCommandNode<S>.() -> Unit): LiteralArgumentBuilder<S> {
-            val root = LiteralArgumentBuilder.literal<S>(name)
-            val node = DSLCommandNode<S>(root)
+        internal fun <S> root(name: String, builder: DSLCommandNode<S>.() -> Unit): LiteralArgumentBuilder<S> {
+            val literalArgumentBuilder = LiteralArgumentBuilder.literal<S>(name)
+            val node = DSLCommandNode<S>(literalArgumentBuilder)
             node.builder()
-            return root
+            return literalArgumentBuilder
         }
     }
 }

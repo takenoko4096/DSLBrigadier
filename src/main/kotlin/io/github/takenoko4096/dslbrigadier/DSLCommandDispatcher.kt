@@ -2,15 +2,22 @@ package io.github.takenoko4096.dslbrigadier
 
 import com.mojang.brigadier.CommandDispatcher
 
-abstract class DSLCommandDispatcher<S> {
+class DSLCommandDispatcher<S> {
     private val dispatcher = CommandDispatcher<S>()
 
-    infix fun String.command(builder: DSLCommandNode<S>.() -> Unit) {
-        val root = DSLCommandNode.newCommand(this, builder)
-        dispatcher.register(root)
+    fun build(name: String, builder: DSLCommandNode<S>.() -> Unit): DSLCommand<S> {
+        return DSLCommand(DSLCommandNode.root(name, builder))
     }
 
-    operator fun invoke(callback: DSLCommandDispatcher<S>.() -> Unit) {
+    operator fun DSLCommand<S>.unaryPlus() {
+        dispatcher.register(literalArgumentBuilder)
+    }
+
+    infix fun String.command(builder: DSLCommandNode<S>.() -> Unit) {
+        dispatcher.register(DSLCommandNode.root(this, builder))
+    }
+
+    fun registration(callback: DSLCommandDispatcher<S>.() -> Unit) {
         callback()
     }
 
