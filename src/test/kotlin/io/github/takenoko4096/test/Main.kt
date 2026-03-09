@@ -22,6 +22,11 @@ val greetCommand = command<CommandSourceStack>("greet") {
 
     "from" {
         "place"(string()) {
+            suggests {
+                builder.suggest("here")
+                builder.buildFuture()
+            }
+
             executes {
                 println("hello from ${"place"[String::class]}!")
                 returns = 1

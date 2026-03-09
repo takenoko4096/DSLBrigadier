@@ -1,14 +1,23 @@
 package io.github.takenoko4096.dslbrigadier
 
-import com.mojang.brigadier.CommandDispatcher
+import io.papermc.paper.command.brigadier.CommandSourceStack
+import io.papermc.paper.command.brigadier.Commands
 
-@BrigadierDSL
-class CommandRegistrar<S> internal constructor(private val dispatcher: CommandDispatcher<S>) {
-    infix fun String.command(builder: DSLCommandNode<S>.() -> Unit) {
-        dispatcher.register(DSLCommandNode.root(this, builder))
+class CommandRegistrar internal constructor(commands: Commands) : AbstractCommandRegistrar<Commands, CommandSourceStack>(commands) {
+    override infix fun String.command(builder: UnbuiltDSLCommand<CommandSourceStack>.() -> Unit) {
+        val command = UnbuiltDSLCommand.createCommand(this, builder)
+        registrar.register(
+            command.literalArgumentBuilder.build(),
+            command.description,
+            command.aliases
+        )
     }
 
-    operator fun DSLCommand<S>.unaryPlus() {
-        dispatcher.register(literalArgumentBuilder)
+    override operator fun DSLCommand<CommandSourceStack>.unaryPlus() {
+        registrar.register(
+            literalArgumentBuilder.build(),
+            description,
+            aliases
+        )
     }
 }

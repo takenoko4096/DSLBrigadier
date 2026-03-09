@@ -11,7 +11,7 @@ import com.mojang.brigadier.builder.ArgumentBuilder
 import com.mojang.brigadier.builder.LiteralArgumentBuilder
 import com.mojang.brigadier.builder.RequiredArgumentBuilder
 
-class DSLCommandNode<S> private constructor(private val argumentBuilder: ArgumentBuilder<S, *>) {
+open class DSLCommandNode<S> internal constructor(protected open val argumentBuilder: ArgumentBuilder<S, *>) {
     private var executed: Boolean = false
 
     private val identifiers = mutableSetOf<String>()
@@ -36,13 +36,13 @@ class DSLCommandNode<S> private constructor(private val argumentBuilder: Argumen
         identifiers.add(this)
     }
 
-    operator fun <T> String.invoke(type: ArgumentType<T>, builder: DSLCommandNode<S>.() -> Unit) {
+    operator fun <T> String.invoke(type: ArgumentType<T>, builder: SuggestibleDSLCommandNode<S, T>.() -> Unit) {
         if (identifiers.contains(this)) {
             throw IllegalArgumentException("block '$this' is duplicating; do not use $this more than once in same block")
         }
 
         val argument = argument(this, type)
-        val child = DSLCommandNode(argument)
+        val child = SuggestibleDSLCommandNode(argument)
         child.builder()
         argumentBuilder.then(argument)
         identifiers.add(this)
@@ -62,6 +62,17 @@ class DSLCommandNode<S> private constructor(private val argumentBuilder: Argumen
             val execution = CommandExecution(it)
             execution.callback()
             return@executes execution.returns
+        }
+    }
+
+    fun execution(callback: ReturnableCommandExecution<S>.() -> Int) {
+        if (executed) {
+            throw IllegalArgumentException("block 'executes' is duplicating; do not use executes more than once in same block")
+        }
+
+        executed = true
+        argumentBuilder.executes {
+            return@executes ReturnableCommandExecution(it).callback()
         }
     }
 
@@ -127,14 +138,5 @@ class DSLCommandNode<S> private constructor(private val argumentBuilder: Argumen
 
     fun greedyString(): StringArgumentType {
         return StringArgumentType.greedyString()
-    }
-
-    companion object {
-        internal fun <S> root(name: String, builder: DSLCommandNode<S>.() -> Unit): LiteralArgumentBuilder<S> {
-            val literalArgumentBuilder = LiteralArgumentBuilder.literal<S>(name)
-            val node = DSLCommandNode<S>(literalArgumentBuilder)
-            node.builder()
-            return literalArgumentBuilder
-        }
     }
 }

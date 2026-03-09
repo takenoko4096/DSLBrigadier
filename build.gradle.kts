@@ -1,6 +1,6 @@
 plugins {
     kotlin("jvm") version "2.3.0"
-    id("com.vanniktech.maven.publish") version "0.30.0"
+    id("io.papermc.paperweight.userdev") version "2.0.0-beta.19"
 }
 
 group = "io.github.takenoko4096"
@@ -13,68 +13,9 @@ repositories {
 
 dependencies {
     implementation("com.mojang:brigadier:1.0.18")
+    paperweight.paperDevBundle("1.21.11-R0.1-SNAPSHOT")
 }
 
 kotlin {
     jvmToolchain(21)
 }
-
-java {
-    withSourcesJar()
-    withJavadocJar()
-}
-/*
-publishing {
-    publications {
-        register<MavenPublication>("maven") {
-            pom {
-                name.set(project.name)
-                description.set("atode kaku yoon") // TODO
-                url.set("https://github.com/takenoko4096/DSLBrigadier")
-
-                licenses {
-                    license {
-                        name.set("MIT License")
-                        url.set("https://github.com/takenoko4096/DSLBrigadier/blob/master/LICENSE")
-                        distribution.set("repo")
-                    }
-                }
-
-                developers {
-                    developer {
-                        id.set("takenoko4096")
-                        name.set("TakenokoII")
-                        email.set("subnokoii78@gmail.com")
-                    }
-                }
-
-                scm {
-                    url.set("https://github.com/takenoko4096/DSLBrigadier")
-                }
-            }
-        }
-    }
-}
-
-tasks {
-    named<SonatypeCentralUploadTask>("sonatypeCentralUpload") {
-        dependsOn("jar", "sourcesJar", "javadocJar", "generatePomFileForMavenPublication")
-
-        username = System.getenv("SONATYPE_CENTRAL_USERNAME")
-        password = System.getenv("SONATYPE_CENTRAL_PASSWORD")
-
-        archives = files(
-            tasks.named("jar"),
-            tasks.named("sourcesJar"),
-            tasks.named("javadocJar")
-        )
-
-        pom = file(
-            tasks.named("generatePomFileForMavenPublication").get().outputs.single()
-        )
-
-        signingKey = System.getenv("SIGNING_KEY")
-        signingKeyPassphrase = System.getenv("SIGNING_PASSWORD")
-    }
-}
-*/
