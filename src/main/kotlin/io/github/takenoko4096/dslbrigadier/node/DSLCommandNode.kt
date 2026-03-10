@@ -1,4 +1,4 @@
-package io.github.takenoko4096.dslbrigadier
+package io.github.takenoko4096.dslbrigadier.node
 
 import com.mojang.brigadier.arguments.ArgumentType
 import com.mojang.brigadier.arguments.BoolArgumentType
@@ -10,6 +10,8 @@ import com.mojang.brigadier.arguments.StringArgumentType
 import com.mojang.brigadier.builder.ArgumentBuilder
 import com.mojang.brigadier.builder.LiteralArgumentBuilder
 import com.mojang.brigadier.builder.RequiredArgumentBuilder
+import io.github.takenoko4096.dslbrigadier.execution.PaperCommandExecution
+import io.github.takenoko4096.dslbrigadier.execution.ReturnableCommandExecution
 
 open class DSLCommandNode<S> internal constructor(protected open val argumentBuilder: ArgumentBuilder<S, *>) {
     private var executed: Boolean = false
@@ -36,13 +38,13 @@ open class DSLCommandNode<S> internal constructor(protected open val argumentBui
         identifiers.add(this)
     }
 
-    operator fun <T> String.invoke(type: ArgumentType<T>, builder: SuggestibleDSLCommandNode<S, T>.() -> Unit) {
+    operator fun <T> String.invoke(type: ArgumentType<T>, builder: SuggestibleCommandNode<S, T>.() -> Unit) {
         if (identifiers.contains(this)) {
             throw IllegalArgumentException("block '$this' is duplicating; do not use $this more than once in same block")
         }
 
         val argument = argument(this, type)
-        val child = SuggestibleDSLCommandNode(argument)
+        val child = SuggestibleCommandNode(argument)
         child.builder()
         argumentBuilder.then(argument)
         identifiers.add(this)
@@ -52,20 +54,20 @@ open class DSLCommandNode<S> internal constructor(protected open val argumentBui
         argumentBuilder.requires(predicate)
     }
 
-    fun executes(callback: CommandExecution<S>.() -> Unit) {
+    fun executes(callback: PaperCommandExecution<S>.() -> Unit) {
         if (executed) {
             throw IllegalArgumentException("block 'executes' is duplicating; do not use executes more than once in same block")
         }
 
         executed = true
         argumentBuilder.executes {
-            val execution = CommandExecution(it)
+            val execution = PaperCommandExecution(it)
             execution.callback()
             return@executes execution.returns
         }
     }
 
-    fun execution(callback: ReturnableCommandExecution<S>.() -> Int) {
+    fun returns(callback: ReturnableCommandExecution<S>.() -> Int) {
         if (executed) {
             throw IllegalArgumentException("block 'executes' is duplicating; do not use executes more than once in same block")
         }

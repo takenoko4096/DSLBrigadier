@@ -23,8 +23,7 @@ val greetCommand = command<CommandSourceStack>("greet") {
     "from" {
         "place"(string()) {
             suggests {
-                builder.suggest("here")
-                builder.buildFuture()
+                strings("foo")
             }
 
             executes {
@@ -32,6 +31,10 @@ val greetCommand = command<CommandSourceStack>("greet") {
                 returns = 1
             }
         }
+    }
+
+    returns {
+        return@returns 4
     }
 
     executes {

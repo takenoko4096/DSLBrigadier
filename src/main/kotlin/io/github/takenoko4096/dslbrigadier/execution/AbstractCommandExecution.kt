@@ -1,6 +1,7 @@
-package io.github.takenoko4096.dslbrigadier
+package io.github.takenoko4096.dslbrigadier.execution
 
 import com.mojang.brigadier.context.CommandContext
+import io.github.takenoko4096.dslbrigadier.BrigadierDSL
 import kotlin.reflect.KClass
 
 @BrigadierDSL
