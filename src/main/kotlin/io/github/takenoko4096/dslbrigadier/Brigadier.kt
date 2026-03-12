@@ -22,3 +22,11 @@ fun Commands.registration(callback: PaperCommandRegistrar.() -> Unit) {
 fun minecraftCommand(name: String, builder: ConfigurableCommandNode<CommandSourceStack>.() -> Unit): DSLCommand<CommandSourceStack> {
     return command(name, builder)
 }
+
+fun <T : AbstractBrigadierCommand> Commands.register(vararg commands: T) {
+    PaperCommandRegistrar(this).run {
+        commands.forEach {
+            + it.create()
+        }
+    }
+}

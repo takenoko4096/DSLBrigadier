@@ -81,6 +81,6 @@ fun main() {
     // 5
     println(dispatcher.execute("calculate add 2 3", CommandSourceStack()))
 
-    // hello to Brigadier!
+    // hello to brigadier!
     dispatcher.execute("greet to brigadier", CommandSourceStack())
 }
