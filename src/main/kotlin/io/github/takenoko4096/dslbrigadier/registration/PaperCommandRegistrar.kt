@@ -1,5 +1,6 @@
 package io.github.takenoko4096.dslbrigadier.registration
 
+import io.github.takenoko4096.dslbrigadier.AbstractBrigadierCommand
 import io.github.takenoko4096.dslbrigadier.registration.AbstractCommandRegistrar
 import io.github.takenoko4096.dslbrigadier.DSLCommand
 import io.github.takenoko4096.dslbrigadier.node.ConfigurableCommandNode
@@ -22,5 +23,9 @@ class PaperCommandRegistrar internal constructor(commands: Commands) : AbstractC
             description,
             aliases
         )
+    }
+
+    operator fun AbstractBrigadierCommand.unaryPlus() {
+        create().unaryPlus()
     }
 }
